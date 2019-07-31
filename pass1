@@ -1,0 +1,111 @@
+// trial version
+# include <stdio.h>
+// for atoi function
+# include <stdlib.h>
+// for using string functions
+# include <string.h>
+// anything written using ** is a comment line
+// we'll be doing pass 1 on INPUT_ALP
+// with OPTAB having all the operations listed
+
+int main(){
+    char opcode[10], operand[10], label[10], code[10], mnemonic[3];
+    // self-explanatory
+    // opcode, operand, label - ALP
+    // code, mnemonic - OPTAB
+    int loc_ctr, start, length;
+    // loc_ctr is the location counter - stores the location of
+    // the end of the program
+
+    //declare the file pointer
+    FILE *input_reader, *optab_reader, *symtab_writer, *output_file, *length_reader;
+    // open input and optab in read mode
+    // create new files symtab and output
+    input_reader = fopen("INPUT_ALP.txt", "r");
+    optab_reader = fopen("OPTAB.txt", "r");
+    symtab_writer = fopen("SYMTAB.txt", "w");
+    output_file = fopen("INTERMEDIATE.txt", "w");
+
+    // scan the first line of the alp for label, opcode and operand
+    fscanf(input_reader, "%s\t%s\t%s", label, opcode, operand);
+
+    // IF OPCODE == START
+    if ( strcmp(opcode, "START") == 0 ){
+        // store the value of the starting address in start
+        start = atoi(operand);
+        // initailize the location counter
+        loc_ctr = start;
+        // write the scanned line onto the output file
+        fprintf(output_file, "\t%s\t%s\t%s\n", label, opcode, operand);
+        // scan the next line
+        fscanf(input_reader, "%s\t%s\t%s", label, opcode, operand);
+    }
+    else{
+        // initialize the location counter to 0
+        loc_ctr = 0;
+    }
+    // while the file has not ended, read the file line by line
+    while (strcmp(opcode, "END") != 0){
+        // write into the output file the value of the location counter
+        fprintf(output_file, "%d\t", loc_ctr);
+
+        // while the value read is not a comment line
+        // write to the SYMTAB label and value of the location counter
+        if(strcmp(label, "**") != 0)
+            fprintf(symtab_writer, "%s\t%d\n", label, loc_ctr);
+        fscanf(optab_reader, "%s\t%s", code, mnemonic);
+
+        // while code is not equal to END,
+        // if the code is an opcode, then increment the value
+        // of location counter by 3, then break from the loop
+        while (strcmp(code, "END") != 0){
+            if(strcmp(opcode, code) == 0){
+                loc_ctr += 3;
+                break;
+            }
+            // read te next lines of the OPTAB
+            fscanf(optab_reader, "%s\t%s", code, mnemonic);
+        }
+
+        // if the opcode is a word, increment the location counter by 3
+        if (strcmp(opcode, "WORD") == 0)
+            loc_ctr += 3;
+        // if it is a reserveword, increment as much words times the location ctr
+        else if (strcmp(opcode, "RESW") == 0)
+            loc_ctr += 3 * atoi(operand);
+        // if it is a reservebyte, increment the location ctr by as many bytes
+        else if (strcmp(opcode, "RESB") == 0)
+            loc_ctr += atoi(operand);
+        // if it is a byte, increment the location ctr by 1
+        else if (strcmp(opcode, "BYTE") == 0)
+            ++loc_ctr;
+
+        // then write values into the output file
+        fprintf(output_file, "%s\t%s\t%s\t\n", label, opcode, operand);
+        // read the next line
+        fscanf(input_reader, "%s\t%s\t%s", label, opcode, operand);
+    }
+
+    // write the last line into the output file with the
+    // value of the location counter
+    fprintf(output_file, "%d\t%s\t%s\t%s\n", loc_ctr, label, opcode, operand);
+
+    // find the length of the file
+    length = loc_ctr - start;
+
+    printf("\nThe length of the assembly language program is : %d", length);
+
+    // create a file to store the length of the assembly language program
+    length_reader = fopen("LENGTH.txt", "w");
+    // store the length inside the file
+    fprintf(length_reader, "%d", length);
+
+    // close all the files
+    fclose(input_reader);
+    fclose(optab_reader);
+    fclose(symtab_writer);
+    fclose(output_file);
+    fclose(length_reader);
+
+    return 0;
+}
